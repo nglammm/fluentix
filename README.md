@@ -83,7 +83,7 @@ Start using it by typing `fluentix` (`flu` or `fl` for short)
 
 ## VS-Code:
 
-Official syntax for Fluentix is at https://marketplace.visualstudio.com/manage/publishers/fluentix/extensions/fluentix/hub?_a=acquisition
+Official syntax for Fluentix is at https://marketplace.visualstudio.com/items?itemName=Fluentix.fluentix
 
 ---
 
