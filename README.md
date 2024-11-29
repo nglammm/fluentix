@@ -1,6 +1,6 @@
-# fluentix: v0.0.1 pre-alpha
+# Fluentix: v0.0.1 pre-alpha
 
-Official fluentix's repo.
+Official Fluentix's repo.
 
 [![N|Solid](https://cdn.prod.website-files.com/674856bff10105193a1e4dd4/6748583d409715928ff42120_fluentix-white.png)](https://fluentix.dev)
 
@@ -16,8 +16,8 @@ Features that Fluentix has.
 
 - Variables declarations
 - Equations solved
-- `Show` (print) function
-- `Input` / `ask` functiom
+- `Show` (print) function (shows output)
+- `Input` / `ask` functions (get user input)
 
 ### Fluentix Syntax
 
@@ -71,7 +71,7 @@ Get Fluentix via those ways:
 
 ### 1. All-in-one installer (coming soon)
 
-It will be available in the future. http://fluentix.dev/downloads
+It will be available in the future. http://get.fluentix.dev
 
 ### 2. Python
 
