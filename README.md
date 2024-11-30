@@ -71,7 +71,7 @@ Get Fluentix via those ways:
 
 ### 1. All-in-one installer (coming soon)
 
-It will be available in the future. http://get.fluentix.dev
+It will be available in the future. http://fluentix.dev/get
 
 ### 2. Python
 
