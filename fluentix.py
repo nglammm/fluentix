@@ -1,53 +1,68 @@
-import os # operating sys stuff
-import random # random verify codes
-import zipfile # zip manager
-import urllib3 # download package
-from fluentixengine import upload # upload package
-from fluentixengine.packages import search_package, insert_data, search_owner, delete_package, search_link, edit_package # get package
-from fluentixengine.sendmail import send_email # send package
-import readline  # up and down keys shortcuts
-import sys # system stuff
-import shutil # delete stuff
-import re # email thing
-from colorama import Fore, Style, init # colored text baby
-import subprocess
-import time
-# Initialize Colorama
+try:
+    import os # operating sys stuff
+    import random # random verify codes
+    import zipfile # zip manager
+    import urllib3 # download package
+    from fluentixengine import upload # upload package
+    from fluentixengine.packages import search_package, insert_data, search_owner, delete_package, search_link, edit_package # get package
+    from fluentixengine.sendmail import send_email # send package
+    import readline  # up and down keys shortcuts
+    import sys # system stuff
+    import shutil # delete stuff
+    import re # email thing
+    from colorama import Fore, Style, init # colored text baby
+    import subprocess
+    import time
+except:
+    sys.stdout.write("[ERROR] Fluentix is incorrectly installed, refer to https://docs.fluentix.dev/install to retry.")
+    sys.exit()
+
 init(autoreset=True)
 
 # Help text for commands
 help_text = """--------------------------------------------------------------
-List of commands for Fluentix v0.0.1:
-- version: version of Fluentix.
-- credits: people who made Fluentix.
-- help <commands>: show related help in specific <commands>.
-- installed: shows installed packages.
-- <file.flu/file.fl> <arg1(if needed)> <arg2(if needed)> ...: run a fluentix file.
-- update <optional: specific version>: update Fluentix; for specific version (Example v0.0.1 write: "update 0.0.1")
-- upload <dir> <mail>: upload a package into the Fluentix library. More info at https://docs.fluentix.dev/upload
-- upload-template: creates a template for uploading package.
-- manage-packages <mail> (or manage-package <mail>): edit your uploaded package via mail.
-- install <package1> <package2> ...: installs (a) package(s) from Fluentix library.
-- uninstall <package1> <package2> ...: uninstalls (a) package(s) on the computer.
-- reinstall <package1> <package2> ...: reinstalls (a) package(s).
-- alias <1:mode> <2:command> <2:shortcut>: Creates a shortcut for a frequently used (or long) command.
--> *Alias modes*
- + -show: show all shortcuts you've made.
- + -manage: manage your shortcuts.
-- exit: exits Fluentix (runtime).
-- clean: clears terminal/cmd.
+Fluentix v0.0.1 - Command Reference (https://docs.fluentix.dev/console)
+│
+├── General Commands: (More info at https://docs.fluentix.dev/console/commands)
+│   ├── version                 : Display the current version of Fluentix.
+│   ├── credits                 : Show the owner + contributors to Fluentix.
+│   ├── check                   : Verify if Fluentix is installed correctly.
+│   ├── help <command>          : Display detailed help for a specific command.
+│   ├── exit                    : Exit the Fluentix runtime.
+│   ├── clean                   : Clear the terminal/command prompt.
+│   └── alias <mode> <command> <shortcut> : Create/manage shortcuts for commands.
+│       ├── -show   : List all existing shortcuts.
+│       └── -manage : Modify or delete shortcuts.
+│
+├── File Execution: (More info at https://docs.fluentix.dev/console/file-execution)
+│   └── <file.flu/file.fl> <args...> : Execute a Fluentix file with optional arguments.
+│
+├── Package Management: (More info at https://docs.fluentix.dev/console/packages)
+│   ├── installed               : List all installed packages.
+│   ├── install <pkg1>, <pkg2>...: Install packages from the Fluentix library.
+│   ├── uninstall <pkg1>, <pkg2>...: Uninstall packages from your computer.
+│   ├── reinstall <pkg1>, <pkg2>...: Reinstall packages.
+│   ├── upload <dir> <email>    : Upload a package to the Fluentix library. 
+│   ├── upload-template         : Generate a package upload template.
+│   └── manage-packages <email> : Manage your uploaded packages via email.
+│
+└── Updates: (WIP)
+   └── update [version]        : Update Fluentix. Specify a version (e.g., "update 0.0.1") 
+                                 or omit for the latest version.
 
-Need help? Check out our faqs at https://docs.fluentix.dev
+Need Help?
+Visit our FAQs: https://docs.fluentix.dev
 --------------------------------------------------------------"""
+
 
 # Unpack shortcuts._fluentix_
 try:
     with open(os.path.dirname(os.path.realpath(__file__)) + '/fluentixdata/shortcuts._fluentix_', 'r') as f:
         shortcuts = f.read().split('\n')
 except FileNotFoundError:
-    pass
+    shortcuts = ""
 
-commands = ["help", "credits", "upload", "version", "installed", "update", "install", "uninstall", "reinstall", "manage-packages", "manage-package","clean", "alias", "upload-template"]
+commands = ["help", "credits", "upload", "version", "installed", "update", "install", "uninstall", "reinstall", "manage-packages", "manage-package","clean", "alias", "upload-template", "check"]
 subcommands = ["-runtime"]
 
 def clean_console():
@@ -336,7 +351,7 @@ def upload_template(dir):
     if dir == None:
         dir = os.getcwd()
     try:
-        shutil.copytree(os.path.dirname(os.path.abspath(__file__))+"/template", dir)
+        shutil.copytree(os.path.dirname(os.path.abspath(__file__))+"/template", dir, symlinks=False, ignore=None, ignore_dangling_symlinks=False, dirs_exist_ok=True)
         sys.stdout.write(Fore.GREEN + f"[SUCCESS] A folder of upload template has successfully copied to {dir} !")
     except NotADirectoryError:
         sys.stdout.write(Fore.RED + "[NOT-A-DIR-ERROR] Not a directory, please double check the sent path.\n" + Fore.WHITE + "More info at: " + Fore.BLUE + "http://docs.fluentix.dev/not-a-dir")
@@ -362,7 +377,7 @@ def upload_package(dir, email, check=True):
 
     package_name = data[0][1]  # Assuming the first line contains the package name
     if search_package(package_name):
-        return Fore.YELLOW + f"[WARNING] Package with name '{Fore.YELLOW + package_name + Fore.YELLOW}' already exists. Please choose a different name."
+        return Fore.YELLOW + f"[WARNING] Package with name '{Fore.YELLOW + package_name + Fore.YELLOW}' already exists. Please choose a different name.\n"
 
     # Ensure the zip file is named correctly
     zip_file_path = os.path.join(dir, f"{package_name}.zip")  # Use package_name for the zip file
@@ -408,7 +423,7 @@ def uninstall_package(package_name):
         installed = f.read().splitlines()
 
     if package_name not in installed:
-        return Fore.YELLOW + f"[WARNING] Package '{package_name}' is not installed."
+        return Fore.YELLOW + f"[WARNING] Package '{package_name}' is not installed.\nSee installed packages: 'fluentix installed'.\n"
 
     option = input("Are you sure (y/n): ")
     if option == "Y" or option == "y":
@@ -452,14 +467,15 @@ def alias_options(option):
         if have_shortcuts:
             display_shortcuts(manage=False)
         else:
-            sys.stdout.write(Fore.YELLOW + "[WARNING] No shortcuts available to .\n")
+            sys.stdout.write(Fore.YELLOW + "[WARNING] No shortcuts available to show.\nMore info at http://docs.fluentix.dev/console/commands#alias")
         return
 
     elif option == '-manage':
         if have_shortcuts:
             display_shortcuts()
         else:
-            return Fore.YELLOW + "[WARNING] No shortcuts created.\nMore info at http://docs.fluentix.dev/alias"
+            sys.stdout.write(Fore.YELLOW + "[WARNING] No shortcuts created.\nMore info at http://docs.fluentix.dev/console/commands#alias")
+            return
         while have_shortcuts:
             if have_shortcuts:
                 display_shortcuts()
@@ -535,8 +551,11 @@ def alias_options(option):
 def alias(shortcut, command):
     """Creates a shortcut via 'key' and do command when pressed."""
     subcommands = ["-show", "-manage"]
-    with open(os.path.dirname(os.path.realpath(__file__)) + '/fluentixdata/shortcuts._fluentix_', 'r') as f:
-        list_functions = f.read().strip().split('\n')
+    try:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/fluentixdata/shortcuts._fluentix_', 'r') as f:
+            list_functions = f.read().strip().split('\n')
+    except:
+        list_functions = ""
 
     if shortcut in subcommands:
         alias_options(shortcut)
@@ -546,7 +565,10 @@ def alias(shortcut, command):
         return Fore.RED + f"[ERROR-ALIAS#3] '{shortcut}' is already used. Try again with a different name.\nOr run it by typing 'fluentix {shortcut}'\nMore info at http://docs.fluentix.dev/alias/error3"
 
     if command is None:
-        return Fore.RED + "[ERROR-ALIAS#2] No command assigned, try again.\nMore info at http://docs.fluentix.dev/alias/error2"
+        return Fore.RED + "[ERROR-ALIAS#2] No command assigned, try again.\nMore info at http://docs.fluentix.dev/console/alias#2"
+    
+    if shortcut is None:
+        return Fore.RED + "[ERROR-ALIAS#2] No command assigned, try again.\nMore info at http://docs.fluentix.dev/console/alias#2"
 
     with open(os.path.dirname(os.path.realpath(__file__)) + '/fluentixdata/shortcuts._fluentix_', 'a') as f:
         if not list_functions:
@@ -565,6 +587,7 @@ def better_help(command):
         "credits" : "Shows the developers and contributors of Fluentix.\nUsage: fluentix credits\nContribute at http://fluentix.dev/contribute",
         "alias" : "Creates shortcut for a command. Best used if command is long.\nUsage: fluentix alias <shortcut/mode> <command>\nDetailed guide at http://docs.fluentix.dev/alias",
         "installed" : "Shows installed packages.\nUsage: fluentix installed\nMore info at http://docs.fluentix.dev/installed",
+        "check" : "Checks if you have installed Fluentix correctly.\nUsage: fluentix check\nIf it returns an error, try again at https://docs.fluentix.dev/install",
         "upload" : "(Web version coming soon) Uploads a package from your computer to the database.\nUsage: fluentix upload <package-directory> <email>\nHow to upload: http://docs.fluentix.dev/upload",
         "update" : "Update packages/Fluentix (if new version found).\nUsage: fluentix update <fluentix/package1> <package2> ...\nMore info at: http://docs.fluentix.dev/update",
         "install" : "Install packages (if multi packages were given) from Fluentix's database.\nUsage: fluentix install <package1> <package2> ... \nYou can easily search for packages at http://lib.fluentix.dev",
@@ -592,7 +615,60 @@ def do_alias(shortcut, command):
     except:
         raise Fore.RED + f"[ALIAS-ERROR#1] Error occured while running shortcut command {shortcut}\nMore info at http://docs.fluentix.dev/alias/error1"
 
-def do_func(mode, arguments):
+def check():
+    """Check if fluentix is installed correctly"""
+    sys.stdout.write("--------------------------------------------------------------\n")
+    point = 0
+    sys.stdout.write("[INFO] Running check...\n[INFO] Checking for required modules...\n")
+    time.sleep(1)
+    try:
+        import pymysql
+        import urllib3
+        import colorama
+    except:
+        return "[INSTALLATION-ERROR] Modules aren't installed/initialzied correctly.\nRefer to https://docs.fluentix.dev/install for more info.\n"
+    # success check
+    try:
+        sys.stdout.write(Fore.GREEN + "[SUCCESS] Modules installed correctly.\n")
+        point += 1
+        sys.stdout.write("[INFO] Checking for internet...\n")
+        time.sleep(1)
+        # checks for internet
+        internet = True
+        url = 'https://example.com'
+        http = urllib3.PoolManager()
+        response = http.request('GET', url)
+        sys.stdout.write(Fore.GREEN + "[SUCCESS] Internet connection is valid!\n")
+        point += 1
+    except:
+        sys.stdout.write(Fore.YELLOW + "[WARNING] Limited or no internet connection, packages function is restricted.\n")
+        internet = False
+    # checks for fluentix state
+    if internet:
+        sys.stdout.write("[INFO] Checking Fluentix's database availability...\n")
+        try:
+            search_owner("ppthanh216@gmail.com")
+            sys.stdout.write(Fore.GREEN + "[SUCCESS] Fluentix's database is good.\n[SUCCESS] Functions related to packages can be used.\n")
+            point += 1
+        except:
+            sys.stdout.write(Fore.RED + "[ERROR] Fluentix's database is temporary down (or maintaince), you can double check your internet or wait a moment.\n")
+    else:
+        sys.stdout.write("[INFO] Skipping checking Fluentix's database because internet is not available.\n")
+
+    if point == 3:
+        sys.stdout.write(Fore.GREEN + "[SUCCESS] Fluentix is successfully installed on your device.\n")
+    
+    elif point == 0:
+        sys.stdout.write(Fore.RED + "[FAILED] Fluentix is not correctly installed on your computer.\nRefer to https://docs.fluentix.dev/install for more info.\n")
+    
+    else:
+        sys.stdout.write(Fore.YELLOW + "[WARNING] Fluentix is partially installed on your computer, but it is limited, try connect to a valid internet.\n")
+
+    sys.stdout.write("[RESULT] Checked and satisfied " + str(point) + "/3 conditions.\n")
+    sys.stdout.write("--------------------------------------------------------------\n")
+    
+
+def do_func(mode, arguments, cmd):
     """Execute commands based on user input."""
     if mode == "version":
         return "Current version: Fluentix - v0.0.1 Beta"
@@ -613,15 +689,23 @@ def do_func(mode, arguments):
         
     elif mode == "install":
         # do install
-        if not arguments:
+        if not arguments or not cmd:
             return "Usage: fluentix install <package1> <package2> ...\nMore info by typing 'fluentix help install'."
-        return "\n".join(install_package(arg) for arg in arguments)
+        cmd = cmd.split(',')
+        for arg in cmd:
+            arg = ' '.join(map(str, arg.split()))
+            sys.stdout.write(install_package(arg))
+        return
     
     elif mode == "uninstall":
         # do uninstall
-        if len(arguments) == 0:
-            return Fore.YELLOW + "[WARNING] Please specify the package name to uninstall.\n" + Fore.WHITE + "Usage: fluentix uninstall <package1> <package2> ..."
-        return uninstall_package(arguments[0])  # Uninstall the specified package
+        if not arguments or not cmd:
+            return "Usage: fluentix install <package1> <package2> ...\nMore info by typing 'fluentix help install'."
+        cmd = cmd.split(',')
+        for arg in cmd:
+            arg = arg.replace(' ', '')
+            sys.stdout.write(uninstall_package(arg))
+        return
     
     elif mode == "upload":
         # do upload
@@ -642,8 +726,13 @@ def do_func(mode, arguments):
     elif mode == "clean":
         clean_console()
     elif mode == "reinstall":
-        for i in range(len(arguments)):
-            reinstall(arguments[i])
+        if not arguments or not cmd:
+            return "Usage: fluentix install <package1> <package2> ...\nMore info by typing 'fluentix help install'."
+        cmd = cmd.split(',')
+        for arg in cmd:
+            arg = arg.split()
+            sys.stdout.write(reinstall(arg))
+        return
     elif mode == "alias":
         try:
             shortcut = arguments[0]
@@ -665,6 +754,9 @@ def do_func(mode, arguments):
                 return Fore.RED + "[ERROR-HELP] Invalid command, find the list of commands at " + Fore.CYAN + "http://docs.fluentix.dev/commands"
         except IndexError:
             return help_text
+    elif mode == "check":
+        # checks if installed correctly
+        return check()
 
 def do_sub(command, arg=None, source=False):
     """Do subcommands"""
@@ -735,11 +827,11 @@ def main():
                 do_sub(fluentix_command)
 
             elif fluentix_command in commands:
-                s = do_func(fluentix_command, args)
+                s = do_func(fluentix_command, args, fluentix)
                 if s:
                     sys.stdout.write(s + "\n")
 
-            elif fluentix_command.count('.fluentix') == 0:
+            elif fluentix_command.count('.flu') == 0 or fluentix_command.count('.fl') == 0:
                 sys.stdout.write(Fore.RED + f"[TERMINAL-ERROR#1] Unknown command '{fluentix_command}'.\n" + Fore.CYAN + "More info at http://docs.fluentix.dev/faq/unknown-command\n")
                 
             elif fluentix != None:
@@ -765,7 +857,7 @@ def prase():
         del args[0]
 
         if fluentix_command in commands:
-            s = do_func(fluentix_command, args)
+            s = do_func(fluentix_command, args, ' '.join(map(str, args)))
             if s:
                 sys.stdout.write(s + "\n")
 
@@ -785,7 +877,7 @@ def prase():
                 except FileNotFoundError:
                     sys.stdout.write(Fore.RED + f"[FILE-ERROR#1] File not found for '{sys.argv[1]}' in dir {os.getcwd()}\nMore info at http://docs.fluentix.dev/file/error1\n")
 
-        elif fluentix_command.count('.fluentix') == 0:
+        elif fluentix_command.count('.flu') == 0 or fluentix_command.count('fl') == 0:
             sys.stdout.write(Fore.RED + f"[TERMINAL-ERROR#1] Unknown command '{fluentix_command}'.\n" + Fore.WHITE + "More info at " + Fore.BLUE + "http://docs.fluentix.dev/unknown-command\n")
             return
 
