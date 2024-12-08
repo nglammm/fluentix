@@ -506,6 +506,8 @@ def alias_options(option):
                                 del list_functions[selection * 2:selection * 2 + 2]
                                 with open(os.path.dirname(os.path.realpath(__file__)) + '/fluentixdata/shortcuts._fluentix_', 'w') as f:
                                     f.write('\n'.join(list_functions))
+                                    f.write('\n')
+
                                 sys.stdout.write(Fore.GREEN + "[SUCCESS] Shortcut deleted.\n")
                                 break  # Exit the inner loop to refresh the outer loop
 
@@ -550,6 +552,7 @@ def alias_options(option):
 
 def alias(shortcut, command):
     """Creates a shortcut via 'key' and do command when pressed."""
+    
     subcommands = ["-show", "-manage"]
     try:
         with open(os.path.dirname(os.path.realpath(__file__)) + '/fluentixdata/shortcuts._fluentix_', 'r') as f:
@@ -561,18 +564,18 @@ def alias(shortcut, command):
         alias_options(shortcut)
         return ""
 
+    if command is None or command == "":
+        return Fore.RED + "[ERROR-ALIAS#2] No command assigned, try again.\nMore info at http://docs.fluentix.dev/console/alias#error-alias2"
+    
+    if shortcut is None or shortcut == "":
+        return Fore.RED + "[ERROR-ALIAS#2] No command assigned, try again.\nMore info at http://docs.fluentix.dev/console/alias#error-alias2"
+
     if shortcut in commands or shortcut in list_functions:
         return Fore.RED + f"[ERROR-ALIAS#3] '{shortcut}' is already used. Try again with a different name.\nOr run it by typing 'fluentix {shortcut}'\nMore info at http://docs.fluentix.dev/alias/error3"
 
-    if command is None:
-        return Fore.RED + "[ERROR-ALIAS#2] No command assigned, try again.\nMore info at http://docs.fluentix.dev/console/alias#2"
-    
-    if shortcut is None:
-        return Fore.RED + "[ERROR-ALIAS#2] No command assigned, try again.\nMore info at http://docs.fluentix.dev/console/alias#2"
-
     with open(os.path.dirname(os.path.realpath(__file__)) + '/fluentixdata/shortcuts._fluentix_', 'a') as f:
-        if not list_functions:
-            f.write(f"{shortcut}\n{command}")
+        if list_functions != "":
+            f.write(f"{shortcut}\n{command}\n")
         else:
             f.write(f"\n{shortcut}\n{command}")
 
@@ -608,12 +611,13 @@ def better_help(command):
     
 def do_alias(shortcut, command):
     sys.stdout.write(Fore.CYAN + f"[ALIAS] Executing shortcut command '{shortcut}'...\n" + Fore.WHITE)
-    try:
-        result = subprocess.run(['fluentix', shortcuts[shortcuts.index(command)]], capture_output=True, text=True)
-        sys.stdout.write(result.stdout)
+    result = subprocess.run(['flu', shortcuts[shortcuts.index(command)]], capture_output=True, text=True)
+    sys.stdout.write(result.stdout)
+    if (result.stdout.split('#')[0].split('-')[1].split("'")[0] == "ERROR"):
+        sys.stdout.write(Fore.RED + f"[ALIAS-ERROR#1] Error occured while running shortcut command '{shortcut}'. \nRefer above to see error, this problem is likely not a problem with 'alias'.\nhttps://docs.fluentix.dev/console/alias#error-alias1")
         return
-    except:
-        raise Fore.RED + f"[ALIAS-ERROR#1] Error occured while running shortcut command {shortcut}\nMore info at http://docs.fluentix.dev/alias/error1"
+    else:
+        return
 
 def check():
     """Check if fluentix is installed correctly"""
@@ -768,7 +772,7 @@ def main():
     sys.stdout.write("[INFO] Entered fluentix runtime.\n")
     while True:
         try:
-            fluentix = input(Fore.WHITE + "fluentix> ")
+            fluentix = input("flu> ")
             try:
                 fluentix.split('.')[1]
                 run_file = fluentix
@@ -789,19 +793,16 @@ def main():
             if fluentix_command == "exit":
                 break
             
+            elif fluentix_command in commands:
+                s = do_func(fluentix_command, args, fluentix)
+                if s:
+                    sys.stdout.write(s + "\n")
+
             elif "fl" in fluentix_command:
-                if fluentix_command.count('.flu') != 0:
+                if fluentix_command.count('.flu') != 0 or fluentix_command.count('.fl') != 0:
                     try:
                         import flu
                         flu.execute_code(fluentix)
-                    except FileNotFoundError:
-                        sys.stdout.write(Fore.RED + f"[FILE-ERROR#1] File not found for '{sys.argv[1]}' in dir {os.getcwd()}\nMore info at http://docs.fluentix.dev/faq/file/error1")
-                        exit()
-
-                elif fluentix_command.count('.fl') != 0:
-                    try:
-                        import fl
-                        fl.execute_code(fluentix)
                     except FileNotFoundError:
                         sys.stdout.write(Fore.RED + f"[FILE-ERROR#1] File not found for '{sys.argv[1]}' in dir {os.getcwd()}\nMore info at http://docs.fluentix.dev/faq/file/error1")
                         exit()
@@ -825,11 +826,6 @@ def main():
                 if args:
                     do_sub(fluentix_command, arg=args)
                 do_sub(fluentix_command)
-
-            elif fluentix_command in commands:
-                s = do_func(fluentix_command, args, fluentix)
-                if s:
-                    sys.stdout.write(s + "\n")
 
             elif fluentix_command.count('.flu') == 0 or fluentix_command.count('.fl') == 0:
                 sys.stdout.write(Fore.RED + f"[TERMINAL-ERROR#1] Unknown command '{fluentix_command}'.\n" + Fore.CYAN + "More info at http://docs.fluentix.dev/faq/unknown-command\n")
@@ -872,10 +868,12 @@ def prase():
             else:
                 # run file functionality
                 try:
-                    import fl
-                    fl.execute_code(fluentix_command)
+                    import flu
+                    with open(sys.argv[1]) as file:
+                        flu.execute_code(file.read(), run_file[1].lower())
                 except FileNotFoundError:
-                    sys.stdout.write(Fore.RED + f"[FILE-ERROR#1] File not found for '{sys.argv[1]}' in dir {os.getcwd()}\nMore info at http://docs.fluentix.dev/file/error1\n")
+                    sys.stdout.write(Fore.RED + f"[FILE-ERROR#1] File not found for '{Fore.YELLOW + sys.argv[1] + Fore.RED}' in dir '{Fore.YELLOW + os.getcwd() + Fore.RED}'\n" + Fore.WHITE + "More info at " + Fore.BLUE + "http://docs.fluentix.dev/file/error1\n")
+                    exit(1)
 
         elif fluentix_command.count('.flu') == 0 or fluentix_command.count('fl') == 0:
             sys.stdout.write(Fore.RED + f"[TERMINAL-ERROR#1] Unknown command '{fluentix_command}'.\n" + Fore.WHITE + "More info at " + Fore.BLUE + "http://docs.fluentix.dev/unknown-command\n")
@@ -890,19 +888,12 @@ if __name__ == '__main__':
         try:
             sys.argv[1].split('.')[1]
             run_file = sys.argv[1].split('.')
-            if run_file[1].lower() == "flu":
+            if run_file[1].lower() in ("flu", "fl"):
                 # run file functionality
                 try:
                     import flu
-                    flu.execute_code(sys.argv[1])
-                except FileNotFoundError:
-                    sys.stdout.write(Fore.RED + f"[FILE-ERROR#1] File not found for '{Fore.YELLOW + sys.argv[1] + Fore.RED}' in dir '{Fore.YELLOW + os.getcwd() + Fore.RED}'\n" + Fore.WHITE + "More info at " + Fore.BLUE + "http://docs.fluentix.dev/file/error1\n")
-                    exit(1)
-            elif run_file[1].lower() == "fl":
-                # run file functionality
-                try:
-                    import fl
-                    fl.execute_code(sys.argv[1])
+                    with open(sys.argv[1]) as file:
+                        flu.execute_code(file.read(), run_file[1].lower())
                 except FileNotFoundError:
                     sys.stdout.write(Fore.RED + f"[FILE-ERROR#1] File not found for '{Fore.YELLOW + sys.argv[1] + Fore.RED}' in dir '{Fore.YELLOW + os.getcwd() + Fore.RED}'\n" + Fore.WHITE + "More info at " + Fore.BLUE + "http://docs.fluentix.dev/file/error1\n")
                     exit(1)
@@ -913,9 +904,4 @@ if __name__ == '__main__':
             sys.argv[1:]
             prase()
     except IndexError:
-        try:
-            sys.stdout.write("To enter fluentix's runtime: type 'fluentix -runtime' (or 'flu -runtime' for short)."+"\n")
-            sys.stdout.write("--------------------------------------------------------------")
-            exit()
-        except ValueError:
-            exit()
+        exit()
